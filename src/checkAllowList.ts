@@ -20,7 +20,30 @@ function isUserNotInAllowList(committer) {
     }).length > 0
 }
 
+function isUserNotUsedAllowdSuffixEmail(committer) {
+
+    const allowListPatterns: string[] = input.getAllowEmailSuffix().split(',')
+
+    return allowListPatterns.filter(function (pattern) {
+        pattern = pattern.trim()
+        if (pattern.includes('@')) {
+            if (pattern.includes('*')) {
+                const regex = _.escapeRegExp(pattern).split('\\*').join('.*')
+
+                return new RegExp(regex).test(committer)
+            }
+            return pattern == committer
+        }
+    }).length > 0
+
+}
+
 export function checkAllowList(committers: CommittersDetails[]): CommittersDetails[] {
-    const committersAfterAllowListCheck: CommittersDetails[] = committers.filter(committer => committer && !(isUserNotInAllowList !== undefined && isUserNotInAllowList(committer.name)))
+    const committersAfterAllowListCheck: CommittersDetails[] = committers.filter(committer => 
+        committer && (
+            !(isUserNotInAllowList !== undefined && isUserNotInAllowList(committer.name) || 
+            isUserNotUsedAllowdSuffixEmail !== undefined && isUserNotUsedAllowdSuffixEmail(committer.email))
+        )
+    )
     return committersAfterAllowListCheck
 }
