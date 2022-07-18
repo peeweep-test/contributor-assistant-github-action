@@ -27,6 +27,7 @@ export default async function getCommitters(): Promise<CommittersDetails[]> {
                                     }
                                 }
                                 committer {
+                                    email
                                     name
                                     user {
                                         id
@@ -53,9 +54,11 @@ export default async function getCommitters(): Promise<CommittersDetails[]> {
         })
         response.repository.pullRequest.commits.edges.forEach(edge => {
             const committer = extractUserFromCommit(edge.node.commit)
+            const email = extractEmailFromCommit(edge.node.commit)
             let user = {
                 name: committer.login || committer.name,
                 id: committer.databaseId || '',
+                email: email,
                 pullRequestNo: context.issue.number
             }
             if (committers.length === 0 || committers.map((c) => {
@@ -75,3 +78,5 @@ export default async function getCommitters(): Promise<CommittersDetails[]> {
 
 }
 const extractUserFromCommit = (commit) => commit.author.user || commit.committer.user || commit.author || commit.committer
+
+const extractEmailFromCommit = (commit) => commit.author.email || commit.committer.email

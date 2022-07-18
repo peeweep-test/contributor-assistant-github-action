@@ -16,6 +16,8 @@ export const getBranch = (): string => core.getInput('branch', { required: false
 
 export const getAllowListItem = (): string => core.getInput('allowlist', { required: false })
 
+export const getAllowEmailSuffix = (): string => core.getInput('allow-email-list', { required: false})
+
 export const getEmptyCommitFlag = (): string => core.getInput('empty-commit-flag', { required: false })
 
 export const getSignedCommitMessage = (): string => core.getInput('signed-commit-message', { required: false })
