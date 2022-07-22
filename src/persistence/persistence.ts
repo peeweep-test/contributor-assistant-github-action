@@ -4,6 +4,9 @@ import { context } from '@actions/github'
 
 import * as input from '../shared/getInputs'
 import { ReactedCommitterMap } from '../interfaces'
+import * as core from '@actions/core'
+
+const { GITHUB_REPOSITORY, GITHUB_SHA } = process.env;
 
 let octokitInstance
 
@@ -43,9 +46,15 @@ export async function createFile(contentBinary): Promise<any> {
 }
 
 export async function updateFile(sha: string, claFileContent, reactedCommitters: ReactedCommitterMap): Promise<any> {
-    const pullRequestNo = context.issue.number
+    const pullRequestNo = context.issue.number.toString()
+    let users = ""
+    reactedCommitters.newSigned.forEach(user => {
+        users += "@" + user.name + " "
+    })
+    users = users.trim()
     claFileContent?.signedContributors.push(...reactedCommitters.newSigned)
     let contentString = JSON.stringify(claFileContent, null, 2)
+    const url = pullRequestNo && `https://github.com/${ GITHUB_REPOSITORY }/pull/${ pullRequestNo.trim() }`;
     let contentBinary = Buffer.from(contentString).toString("base64")
     if (octokitInstance === undefined) await initOctokitInstance()
     await octokitInstance.repos.createOrUpdateFileContents({
@@ -54,8 +63,8 @@ export async function updateFile(sha: string, claFileContent, reactedCommitters:
         path: input.getPathToSignatures(),
         sha,
         message: input.getSignedCommitMessage() ?
-            input.getSignedCommitMessage().replace('$contributorName', context.actor).replace('$pullRequestNo', context.issue.number.toString()) :
-            `@${context.actor} has signed the CLA from Pull Request #${pullRequestNo}`,
+            input.getSignedCommitMessage().replace('$contributorName', users).replace('$pullRequestNo', url) :
+            `${users} has signed the CLA from Pull Request ${url}`,
         content: contentBinary,
         branch: input.getBranch()
     })
