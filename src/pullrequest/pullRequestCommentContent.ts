@@ -3,16 +3,17 @@ import {
 } from '../interfaces'
 import * as input from '../shared/getInputs'
 
-export function commentContent(signed: boolean, committerMap: CommitterMap): string {
+export function commentContent(signed: boolean, committerMap: CommitterMap, partnerSigned: boolean): string {
     // using a `string` true or false purposely as github action input cannot have a boolean value
+    console.log(signed, partnerSigned)
     if (input.getUseDcoFlag() == 'true') {
-        return dco(signed, committerMap)
+        return dco(signed, committerMap, partnerSigned)
     } else {
-        return cla(signed, committerMap)
+        return cla(signed, committerMap, partnerSigned)
     }
 }
 
-function dco(signed: boolean, committerMap: CommitterMap): string {
+function dco(signed: boolean, committerMap: CommitterMap, partnerSigned: boolean): string {
 
     if (signed) {
         const line1 = input.getCustomAllSignedPrComment() || `All contributors have signed the DCO  ✍️ ✅`
@@ -54,9 +55,9 @@ function dco(signed: boolean, committerMap: CommitterMap): string {
     return text
 }
 
-function cla(signed: boolean, committerMap: CommitterMap): string {
+function cla(signed: boolean, committerMap: CommitterMap, partnerSigned: boolean): string {
 
-    if (signed) {
+    if (signed && partnerSigned) {
         const line1 = input.getCustomAllSignedPrComment() || `All contributors have signed the CLA  ✍️ ✅`
         const text = `****CLA Assistant Lite bot**** ${line1}`
         return text
@@ -65,18 +66,25 @@ function cla(signed: boolean, committerMap: CommitterMap): string {
 
     if (committerMap && committerMap.signed && committerMap.notSigned) {
         committersCount = committerMap.signed.length + committerMap.notSigned.length
-
     }
 
-    let you = committersCount > 1 ? `you all` : `you`
-    let lineOne = (input.getCustomNotSignedPrComment() || `<br/>Thank you for your submission, we really appreciate it. Like many open-source projects, we ask that $you sign our [Contributor License Agreement](${input.getPathToDocument()}) before we can accept your contribution. You can sign the CLA by just posting a Pull Request Comment same as the below format.<br/>`).replace('$you', you)
-    let text = `**CLA Assistant Lite bot:** ${lineOne}
-   - - -
-   \`\`\`
-   ${input.getCustomPrSignComment() || "I have read the CLA Document and I hereby sign the CLA"}
-   \`\`\`
-   - - -
-   `
+    let text = '**CLA Assistant Lite bot:**'
+
+    if (!signed) {
+        let you = committersCount > 1 ? `you all` : `you`
+        let lineOne = (input.getCustomNotSignedPrComment() || `<br/>Thank you for your submission, we really appreciate it. Like many open-source projects, we ask that $you sign our [Contributor License Agreement](${input.getPathToDocument()}) before we can accept your contribution. You can sign the CLA by just posting a Pull Request Comment same as the below format.<br/>`).replace('$you', you)
+        text += `${lineOne}
+- - -
+\`\`\`
+${input.getCustomPrSignComment() || "I have read the CLA Document and I hereby sign the CLA"}
+\`\`\`
+- - -
+`
+    }
+
+    if (!partnerSigned) {
+        text += input.getPartnerNotInOrgComment() || `<br/> Pull request user need to join our organize as a member <br/>`
+    }
 
     if (committersCount > 1 && committerMap && committerMap.signed && committerMap.notSigned) {
         text += `**${committerMap.signed.length}** out of **${committerMap.signed.length + committerMap.notSigned.length}** committers have signed the CLA.`

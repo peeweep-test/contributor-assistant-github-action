@@ -4,7 +4,6 @@ import * as _ from 'lodash'
 import * as input from './shared/getInputs'
 
 
-
 function isUserNotInAllowList(committer) {
 
     const allowListPatterns: string[] = input.getAllowListItem().split(',')
@@ -20,10 +19,7 @@ function isUserNotInAllowList(committer) {
     }).length > 0
 }
 
-function isUserNotUsedAllowdSuffixEmail(committer) {
-
-    const allowListPatterns: string[] = input.getAllowEmailSuffix().split(',')
-
+export function isUserNotUsedAllowdSuffixEmail(committer, allowListPatterns: string[]) {
     return allowListPatterns.filter(function (pattern) {
         pattern = pattern.trim()
         if (pattern.includes('@')) {
@@ -39,10 +35,13 @@ function isUserNotUsedAllowdSuffixEmail(committer) {
 }
 
 export function checkAllowList(committers: CommittersDetails[]): CommittersDetails[] {
+
+    const allowListPatterns: string[] = input.getAllowEmailSuffix().split(',')
+
     const committersAfterAllowListCheck: CommittersDetails[] = committers.filter(committer => 
         committer && (
             !(isUserNotInAllowList !== undefined && isUserNotInAllowList(committer.name) || 
-            isUserNotUsedAllowdSuffixEmail !== undefined && isUserNotUsedAllowdSuffixEmail(committer.email))
+            isUserNotUsedAllowdSuffixEmail !== undefined && isUserNotUsedAllowdSuffixEmail(committer.email, allowListPatterns))
         )
     )
     return committersAfterAllowListCheck

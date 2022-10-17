@@ -6,6 +6,9 @@ import { context } from '@actions/github'
 import { createFile, getFileContent, updateFile } from './persistence/persistence'
 import { reRunLastWorkFlowIfRequired } from './pullRerunRunner'
 import { isAppPrivateKeyPresent, isPersonalAccessTokenPresent } from './octokit'
+import { getPartnerAllowEmailSuffix } from './shared/getInputs'
+import { isUserNotUsedAllowdSuffixEmail } from './checkAllowList'
+import { checkPartnerPullRequestUserIsInOrg } from './pullrequest/partnerPullRequestCheck'
 
 import * as _ from 'lodash'
 import * as core from '@actions/core'
@@ -32,7 +35,12 @@ export async function setupClaCheck() {
       /* pushing the recently signed  contributors to the CLA Json File */
       await updateFile(sha, claFileContent, reactedCommitters)
     }
-    if (reactedCommitters?.allSignedFlag || (committerMap?.notSigned === undefined || committerMap.notSigned.length === 0)) {
+    if (
+      // check notsigned commit
+      (reactedCommitters?.allSignedFlag || (committerMap?.notSigned === undefined || committerMap.notSigned.length === 0)) && 
+      // check partner signed or not
+      (committerMap?.notSigned === undefined || committerMap.partner.length === 0 || (checkPartnerPullRequestUserIsInOrg !== undefined  && await checkPartnerPullRequestUserIsInOrg()))
+    ) {
       core.info(`All contributors have signed the CLA 📝 ✅ `)
       return reRunLastWorkFlowIfRequired()
     } else {
@@ -86,22 +94,33 @@ function prepareCommiterMap(committers: CommittersDetails[], claFileContent): Co
 
   let committerMap = getInitialCommittersMap()
 
+  const partnerEmailListPatterns = getPartnerAllowEmailSuffix().split(',')
+
   committerMap.notSigned = committers.filter(
-    committer => !claFileContent?.signedContributors.some(cla => committer.id === cla.id)
+    committer => (!claFileContent?.signedContributors.some(cla => committer.id === cla.id)) &&
+    !(isUserNotUsedAllowdSuffixEmail !== undefined && isUserNotUsedAllowdSuffixEmail(committer.email, partnerEmailListPatterns))
   )
+
   committerMap.signed = committers.filter(committer =>
     claFileContent?.signedContributors.some(cla => committer.id === cla.id)
   )
+
+  committerMap.partner = committers.filter(committer =>
+    (isUserNotUsedAllowdSuffixEmail !== undefined && isUserNotUsedAllowdSuffixEmail(committer.email, partnerEmailListPatterns))
+  )
+
   committers.map(committer => {
     if (!committer.id) {
       committerMap.unknown.push(committer)
     }
   })
+
   return committerMap
 }
 
 const getInitialCommittersMap = (): CommitterMap => ({
   signed: [],
   notSigned: [],
+  partner: [],
   unknown: []
 })

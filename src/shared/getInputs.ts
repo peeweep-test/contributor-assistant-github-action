@@ -18,6 +18,10 @@ export const getAllowListItem = (): string => core.getInput('allowlist', { requi
 
 export const getAllowEmailSuffix = (): string => core.getInput('allow-email-list', { required: false})
 
+export const getPartnerAllowEmailSuffix = (): string => core.getInput('partner-allow-email-list', { required: false})
+
+export const getPartnerNotInOrgComment = (): string => core.getInput('partner-not-in-org-comment', { required: false})
+
 export const getEmptyCommitFlag = (): string => core.getInput('empty-commit-flag', { required: false })
 
 export const getSignedCommitMessage = (): string => core.getInput('signed-commit-message', { required: false })
