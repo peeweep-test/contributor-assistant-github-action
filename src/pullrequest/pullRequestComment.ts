@@ -7,6 +7,7 @@ import {
   CommittersDetails
 } from '../interfaces'
 import { getUseDcoFlag } from '../shared/getInputs'
+import { checkPartnerPullRequestUserIsInOrg } from './partnerPullRequestCheck'
 
 
 
@@ -38,20 +39,22 @@ export default async function prCommentSetup(committerMap: CommitterMap, committ
 }
 
 async function createComment(signed: boolean, committerMap: CommitterMap): Promise<void> {
+  const partnerSigned = committerMap?.notSigned === undefined || committerMap?.partner.length === 0 || (checkPartnerPullRequestUserIsInOrg !== undefined  && await checkPartnerPullRequestUserIsInOrg())
   await octokit.issues.createComment({
     owner: context.repo.owner,
     repo: context.repo.repo,
     issue_number: context.issue.number,
-    body: commentContent(signed, committerMap)
+    body: commentContent(signed, committerMap, partnerSigned)
   }).catch(error => { throw new Error(`Error occured when creating a pull request comment: ${error.message}`) })
 }
 
 async function updateComment(signed: boolean, committerMap: CommitterMap, claBotComment: any): Promise<void> {
+  const partnerSigned = committerMap?.notSigned === undefined || committerMap?.partner.length === 0 || (checkPartnerPullRequestUserIsInOrg !== undefined  && await checkPartnerPullRequestUserIsInOrg())
   await octokit.issues.updateComment({
     owner: context.repo.owner,
     repo: context.repo.repo,
     comment_id: claBotComment.id,
-    body: commentContent(signed, committerMap)
+    body: commentContent(signed, committerMap, partnerSigned)
   }).catch(error => { throw new Error(`Error occured when updating the pull request comment: ${error.message}`) })
 }
 
@@ -89,7 +92,7 @@ function prepareAllSignedCommitters(committerMap: CommitterMap, signedInPrCommit
    * 1) already signed committers in the file 2) signed committers in the PR comment
   */
   const ids = new Set(signedInPrCommitters.map(committer => committer.id))
-  allSignedCommitters = [...signedInPrCommitters, ...committerMap.signed!.filter(signedCommitter => !ids.has(signedCommitter.id))]
+  allSignedCommitters = [...signedInPrCommitters, ...committerMap.signed!.filter(signedCommitter => !ids.has(signedCommitter.id)), ...committerMap.partner!.filter(signedCommitter => !ids.has(signedCommitter.id))]
   /*
   * checking if all the unsigned committers have reacted to the PR comment (this is needed for changing the content of the PR comment to "All committers have signed the CLA")
   */

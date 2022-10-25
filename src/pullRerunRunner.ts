@@ -91,5 +91,4 @@ async function checkIfLastWorkFlowFailed(run: number): Promise<boolean> {
 
     return response.data.conclusion == 'failure'
 
-
 }

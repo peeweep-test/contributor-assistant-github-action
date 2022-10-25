@@ -17,6 +17,11 @@ inputs:
   allow-email-list:
     description: "allowed email that don't have to sign the CLA documant"
     default: ""
+  partner-allow-email-list:
+    description: "allowed email that don't have to sign the CLA documant, but the user pull request must be in the organize"
+    default: ""
+  partner-not-in-org-comment:
+    description: "comment message when partner not in org"
   remote-repository-name:
     description: "provide the remote repository name where all the signatures should be stored"
   remote-organization-name:
@@ -42,5 +47,5 @@ inputs:
     description: "Will lock the pull request after merge so that the signature the contributors cannot revoke their signature comments after merge"
     default: true
 runs:
-  using: "node12"
+  using: "node16"
   main: "lib/main.js"
