@@ -9,8 +9,6 @@ import {
 import { getUseDcoFlag } from '../shared/getInputs'
 import { checkPartnerPullRequestUserIsInOrg } from './partnerPullRequestCheck'
 
-
-
 export default async function prCommentSetup(committerMap: CommitterMap, committers: CommittersDetails[]) {
   const signed = committerMap?.notSigned && committerMap?.notSigned.length === 0
 

@@ -1,7 +1,10 @@
 import { isAppPrivateKeyPresent, isPersonalAccessTokenPresent, octokitUsingPAT, getOctokitByAppSecret } from '../octokit'
 import { context } from '@actions/github'
 import * as core from '@actions/core'
+const yaml = require('js-yaml');
 
+export const partnerEmailSuffix = new Set<string>()
+export const partnerAllMemberIds= new Map<string, string>()
 
 export async function checkPartnerPullRequestUserIsInOrg() {
 
@@ -19,20 +22,58 @@ export async function checkPartnerPullRequestUserIsInOrg() {
         pull_number: context.issue.number
     })
 
-    const username = data?.user?.login || context.issue.owner
+    const userid = data?.user?.id
 
-    try {
-        const res = await octokit.request('GET /orgs/{org}/memberships/{username}', {
-            org: context.repo.owner,
-            username: username
-        })
-        core.debug(res.data.role)
-    } catch (err) {
-        console.log(err)
-        return false
+    core.debug(userid)
+    core.debug("parter in team ids:")
+    for (let id of partnerAllMemberIds.keys()) {
+        core.debug(id)
     }
 
-    return true
+    core.debug(data?.user?.login + " is in " + partnerAllMemberIds.get(userid))
+
+    return partnerAllMemberIds.has(userid)
 }
 
+export async function initParnterData() {
+    let octokit
 
+    if (isAppPrivateKeyPresent !== undefined && isAppPrivateKeyPresent()) {
+        octokit = await getOctokitByAppSecret()
+    } else if (isPersonalAccessTokenPresent !== undefined && isPersonalAccessTokenPresent()) {
+        octokit = octokitUsingPAT
+    }
+
+    const parentDataOwner = "deepin-community"
+    const parentDataRepo  = "SIG"
+
+    // a parnet config path is 'corporation/{partner}/metadata.yml'
+    const parentDataPath = "corporation"
+    const parentDataFile = "/metadata.yml"
+
+    let partners = await octokit.repos.getContent({
+        owner: parentDataOwner,
+        repo: parentDataRepo,
+        path: parentDataPath
+    })
+
+    for (let i =0; i < partners.data.length; i++) {
+        let partnerDataContent = await octokit.repos.getContent({
+            owner: parentDataOwner,
+            repo: parentDataRepo,
+            path: partners.data[i].path + parentDataFile,
+        })
+
+        let datas = Buffer.from(partnerDataContent.data.content, partnerDataContent.data.encoding)
+        let partnerData = yaml.load(datas.toString())
+        partnerData['email-suffix'].toString().split(';').forEach(emailSuffix=> {
+            core.debug("add " + emailSuffix + " into partner email suffix")
+            partnerEmailSuffix.add('*' + emailSuffix)
+            partnerData['members'].forEach( member => {
+                if (member.id !== undefined) {
+                    partnerAllMemberIds.set(member.id, partnerData['name'])
+                }
+            })
+        })
+    }
+}

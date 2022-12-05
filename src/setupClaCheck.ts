@@ -9,6 +9,7 @@ import { isAppPrivateKeyPresent, isPersonalAccessTokenPresent } from './octokit'
 import { getPartnerAllowEmailSuffix } from './shared/getInputs'
 import { isUserNotUsedAllowdSuffixEmail } from './checkAllowList'
 import { checkPartnerPullRequestUserIsInOrg } from './pullrequest/partnerPullRequestCheck'
+import { partnerEmailSuffix } from './pullrequest/partnerPullRequestCheck'
 
 import * as _ from 'lodash'
 import * as core from '@actions/core'
@@ -94,7 +95,8 @@ function prepareCommiterMap(committers: CommittersDetails[], claFileContent): Co
 
   let committerMap = getInitialCommittersMap()
 
-  const partnerEmailListPatterns = getPartnerAllowEmailSuffix().split(',')
+  const partnerEmailListPatterns = [...partnerEmailSuffix.keys()]
+  core.debug("partner email suffix: " + partnerEmailListPatterns)
 
   committerMap.notSigned = committers.filter(
     committer => (!claFileContent?.signedContributors.some(cla => committer.id === cla.id)) &&

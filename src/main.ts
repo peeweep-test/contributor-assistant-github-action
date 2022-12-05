@@ -4,6 +4,7 @@ import { lockPullRequest } from './pullrequest/pullRequestLock'
 
 import * as core from '@actions/core'
 import * as input from './shared/getInputs'
+import { initParnterData } from './pullrequest/partnerPullRequestCheck'
 
 
 
@@ -17,6 +18,8 @@ export async function run() {
     if (context.payload.action === 'closed' && input.lockPullRequestAfterMerge() == 'true') {
       return lockPullRequest()
     } else {
+      // init Partnter before check
+      await initParnterData()
       await setupClaCheck()
     }
   } catch (error) {
