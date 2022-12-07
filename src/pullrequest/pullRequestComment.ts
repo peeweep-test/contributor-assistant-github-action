@@ -11,14 +11,15 @@ import { checkPartnerPullRequestUserIsInOrg } from './partnerPullRequestCheck'
 
 export default async function prCommentSetup(committerMap: CommitterMap, committers: CommittersDetails[]) {
   const signed = committerMap?.notSigned && committerMap?.notSigned.length === 0
+  const partnerSigned = committerMap?.partner === undefined || committerMap?.partner.length === 0 || (checkPartnerPullRequestUserIsInOrg !== undefined  && await checkPartnerPullRequestUserIsInOrg())
 
   try {
     const claBotComment = await getComment()
-    if (!claBotComment && !signed) {
-      return createComment(signed, committerMap)
+    if (!claBotComment && !(signed && partnerSigned)) {
+      return createComment(signed, partnerSigned, committerMap)
     } else if (claBotComment?.id) {
-      if (signed) {
-        await updateComment(signed, committerMap, claBotComment)
+      if (signed || partnerSigned) {
+        await updateComment(signed, partnerSigned, committerMap, claBotComment)
       }
 
       // reacted committers are contributors who have newly signed by posting the Pull Request comment
@@ -27,7 +28,7 @@ export default async function prCommentSetup(committerMap: CommitterMap, committ
           reactedCommitters.allSignedFlag = prepareAllSignedCommitters(committerMap, reactedCommitters.onlyCommitters, committers)
       }
       committerMap = prepareCommiterMap(committerMap, reactedCommitters)
-      await updateComment(reactedCommitters.allSignedFlag, committerMap, claBotComment)
+      await updateComment(reactedCommitters.allSignedFlag, partnerSigned, committerMap, claBotComment)
       return reactedCommitters
     }
   } catch (error) {
@@ -36,8 +37,7 @@ export default async function prCommentSetup(committerMap: CommitterMap, committ
   }
 }
 
-async function createComment(signed: boolean, committerMap: CommitterMap): Promise<void> {
-  const partnerSigned = committerMap?.notSigned === undefined || committerMap?.partner.length === 0 || (checkPartnerPullRequestUserIsInOrg !== undefined  && await checkPartnerPullRequestUserIsInOrg())
+async function createComment(signed: boolean, partnerSigned: boolean, committerMap: CommitterMap): Promise<void> {
   await octokit.issues.createComment({
     owner: context.repo.owner,
     repo: context.repo.repo,
@@ -46,8 +46,7 @@ async function createComment(signed: boolean, committerMap: CommitterMap): Promi
   }).catch(error => { throw new Error(`Error occured when creating a pull request comment: ${error.message}`) })
 }
 
-async function updateComment(signed: boolean, committerMap: CommitterMap, claBotComment: any): Promise<void> {
-  const partnerSigned = committerMap?.notSigned === undefined || committerMap?.partner.length === 0 || (checkPartnerPullRequestUserIsInOrg !== undefined  && await checkPartnerPullRequestUserIsInOrg())
+async function updateComment(signed: boolean, partnerSigned: boolean, committerMap: CommitterMap, claBotComment: any): Promise<void> {
   await octokit.issues.updateComment({
     owner: context.repo.owner,
     repo: context.repo.repo,

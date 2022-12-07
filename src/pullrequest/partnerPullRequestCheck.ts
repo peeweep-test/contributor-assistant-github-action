@@ -5,8 +5,14 @@ const yaml = require('js-yaml');
 
 export const partnerEmailSuffix = new Set<string>()
 export const partnerAllMemberIds= new Map<string, string>()
+let partnerSigned
 
 export async function checkPartnerPullRequestUserIsInOrg() {
+
+    // cache status, scripts onely run in a short time(a few seconds), no need to refresh it.
+    if (partnerSigned !== undefined) {
+        return partnerSigned
+    }
 
     let octokit
 
@@ -31,6 +37,8 @@ export async function checkPartnerPullRequestUserIsInOrg() {
     }
 
     core.debug(data?.user?.login + " is in " + partnerAllMemberIds.get(userid))
+
+    partnerSigned = partnerAllMemberIds.has(userid)
 
     return partnerAllMemberIds.has(userid)
 }
