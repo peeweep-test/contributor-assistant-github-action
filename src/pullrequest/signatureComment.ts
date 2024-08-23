@@ -38,7 +38,11 @@ export default async function signatureWithPRComment(committerMap: CommitterMap,
     /*
     *checking if the reacted committers are not the signed committers(not in the storage file) and filtering only the unsigned committers
     */
+    core.debug(`filteredListOfPRComments: ${JSON.stringify(filteredListOfPRComments)}`)
+    core.debug(`committerMap: ${JSON.stringify(committerMap)}`)
+
     const newSigned = filteredListOfPRComments.filter(commentedCommitter => committerMap.notSigned!.some(notSignedCommitter => commentedCommitter.id === notSignedCommitter.id))
+    core.debug(`newSigned: ${JSON.stringify(newSigned)}`)
 
     /*
     * checking if the commented users are only the contributors who has committed in the same PR (This is needed for the PR Comment and changing the status to success when all the contributors has reacted to the PR)
